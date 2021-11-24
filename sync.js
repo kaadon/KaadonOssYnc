@@ -8,11 +8,30 @@ const Readable = require('stream').Readable;
 const cwd = process.cwd();
 
 module.exports = async (opts) => {
-
     if(!opts.hasOwnProperty('config')) throw 'No config';
     if (!fs.existsSync(opts.config)) throw `config file ${opts.config} not found`;
     const config = JSON.parse(fs.readFileSync(opts.config).toString());
+    let re = /\/(.*)\//
+    let folder = config.folder;
+   if(config.hasOwnProperty('folder') && typeof config.folder === "string"){
+        if (config.folder.length >= 3 && re.test(config.folder)){
+            folder = "." + config.folder
+        }else {
+            folder = "./"
+        }
+    }else {
+       folder = "./"
+       if (config.hasOwnProperty('folder')){
+           delete config.folder
+       }
+   }
+    const path = folder
 
+    console.log(path);
+    console.log();
+
+    console.log(config);
+   return
     if(!opts.hasOwnProperty('ignore')) throw 'No ignore';
     const ig = ignore();
     ig.add(opts.config);
