@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('fs');//55555
 const OSS = require('ali-oss');
 const ignore = require('ignore');
 const xxHash = require('xxhashjs');
@@ -12,26 +12,17 @@ module.exports = async (opts) => {
     if (!fs.existsSync(opts.config)) throw `config file ${opts.config} not found`;
     const config = JSON.parse(fs.readFileSync(opts.config).toString());
     let re = /\/(.*)\//
-    let folder = config.folder;
+    let folder = "/";
    if(config.hasOwnProperty('folder') && typeof config.folder === "string"){
         if (config.folder.length >= 3 && re.test(config.folder)){
-            folder = "." + config.folder
-        }else {
-            folder = "./"
+            folder = "" + config.folder
         }
-    }else {
-       folder = "./"
-       if (config.hasOwnProperty('folder')){
-           delete config.folder
-       }
-   }
+    }
+    if (config.hasOwnProperty('folder')){
+        delete config.folder
+    }
     const path = folder
 
-    console.log(path);
-    console.log();
-
-    console.log(config);
-   return
     if(!opts.hasOwnProperty('ignore')) throw 'No ignore';
     const ig = ignore();
     ig.add(opts.config);
@@ -46,9 +37,8 @@ module.exports = async (opts) => {
     await main();
 
     async function main() {
-        console.log(`Sync ${cwd} ---> oss://${config.bucket}`);
+        console.log(`Sync ${cwd} ---> oss://${config.bucket + path}`);
         console.log(`Calculating changes...`);
-
         let ossFiles = forceReSyncAll ? {} : await getOssFiles(ig);
         // console.log(ossFiles);
 
@@ -92,26 +82,26 @@ module.exports = async (opts) => {
         for (let file of removeList) console.log(chalk.red(`    Remove ${file}`));
         console.log(`\nTotal: ${totalChanges} changes`);
 
-        if(opts.hasOwnProperty('dry') && opts.dry) return;
+        if(opts.hasOwnProperty('dry') && opts.dry) return;//4444
 
         let bar = new progress.Bar();
         bar.start(totalChanges, 0);
         let finishedCount = 0;
 
         for (let file of createList) {
-            await client.put(file, file);
+            await client.put(path + file, file);
             finishedCount++;
             bar.update(finishedCount);
         }
 
         for (let file of modifyList) {
-            await client.put(file, file);
+            await client.put(path + file, file);
             finishedCount++;
             bar.update(finishedCount);
         }
 
         for (let file of removeList) {
-            await client.delete(file);
+            await client.delete(path + file);
             finishedCount++;
             bar.update(finishedCount);
         }
@@ -121,15 +111,15 @@ module.exports = async (opts) => {
         let s = new Readable();
         s.push(fileList);
         s.push(null);
-        console.log(`Commit oss://${config.bucket}/.ossyncfiles`);
-        await client.putStream('.ossyncfiles', s);
+        console.log(`Commit oss://${config.bucket + path}.ossyncfiles`);
+        await client.putStream(path + '.ossyncfiles', s);
         console.log(`Your workspace is up to date!`);
     }
 
     async function getOssFiles(ig) {
         let map = {};
         try {
-            let tmpMap = await client.get('.ossyncfiles');
+            let tmpMap = await client.get(path + '.ossyncfiles');
             tmpMap = JSON.parse(tmpMap.res.data.toString());
 
             for (let file in tmpMap) {
